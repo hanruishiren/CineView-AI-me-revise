@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // 新增：允许来自 'cineview-ai.onrender.com' 的请求
+        allowedHosts: ['cineview-ai.onrender.com'], 
       },
       plugins: [react()],
       define: {
