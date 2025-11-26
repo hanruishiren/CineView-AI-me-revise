@@ -43,7 +43,20 @@ export const analyzeVideoFrames = async (
     
     **关键要求：所有输出内容必须完全使用简体中文。**
     
-    请仔细观察画面变化，识别每一个镜头切换点（Cut）。这是一个高帧率采样序列，务必识别出所有**微小的剪辑（Micro-cuts）**和短暂的镜头。不要遗漏任何一个镜头。
+    请仔细观察画面变化，识别每一个镜头切换点（Cut）。这是一个高帧率采样序列，不要遗漏任何一个镜头，也不要过度敏感将一个镜头识别成多个镜头。
+
+        **重要**：只有在以下情况才算镜头切换：
+        1. 画面发生明显的硬切（Hard Cut）- 场景、角度、景别发生显著变化
+        2. 转场效果（淡入淡出、划像等）
+        3. 时间或空间的明显跳跃
+        
+        **不要**将以下情况识别为镜头切换：
+        - 同一镜头内的人物移动或镜头晃动
+        - 轻微的光线变化
+        - 画面内物体的移动
+        - 同一镜头内的缓慢推拉摇移
+        
+        如果不确定是否为镜头切换，倾向于将其视为同一镜头的延续。
     
     对于每个镜头，请根据画面推断以下信息：
     1. 开始和结束时间 (Start/End Time)：必须严格根据提供的截图时间戳来确定。如果两张截图之间画面发生显著突变，即为切点。
@@ -61,7 +74,20 @@ export const analyzeVideoFrames = async (
     
     Your task is to reconstruct the scene and generate a detailed 'Shot List' (Spotting Sheet).
     
-    This is a high-framerate sample. Pay extreme attention to **micro-cuts** and fast edits. Do not merge distinct shots. Identify every single cut, no matter how short.
+    This is a high-framerate sample. Identify every single cut.
+        Carefully observe the visual changes and identify **clear shot transitions (Cuts)**.
+        **Important**: Only consider the following as shot changes:
+        1. Obvious hard cuts - significant changes in scene, angle, or shot size
+        2. Transition effects (fade in/out, wipes, etc.)
+        3. Clear jumps in time or space
+        
+        **Do NOT** identify the following as shot changes:
+        - Character movement or camera shake within the same shot
+        - Minor lighting changes
+        - Movement of objects within the frame
+        - Slow push/pull/pan/tilt within the same shot
+        
+        When in doubt, prefer to treat it as a continuation of the same shot.
     
     For each shot, infer the following based strictly on visual evidence and context:
     1. Start and End Time (Use the timestamps provided with images). Look for visual cuts between timestamps.
