@@ -38,17 +38,20 @@ export const extractFramesFromVideo = async (
       const width = video.videoWidth;
       const height = video.videoHeight;
 
-      // ULTRA-HIGH PRECISION Intervals
-      // < 30s: 10 fps (0.1s) -> Guarantees catching micro-cuts
-      // < 60s: 5 fps (0.2s)
-      // > 60s: 2.5 fps (0.4s)
+      // OPTIMIZED SAMPLING to extract ~300 frames
+      // < 30s: 10 fps (0.1s) -> ~300 frames
+      // < 60s: 5 fps (0.2s) -> ~300 frames
+      // < 150s: 2 fps (0.5s) -> ~300 frames
+      // < 300s: 1 fps (1.0s) -> ~300 frames
       let intervalSeconds = 1.0;
       if (duration <= 30) {
         intervalSeconds = 0.1;
       } else if (duration <= 60) {
         intervalSeconds = 0.2;
+      } else if (duration <= 150) {
+        intervalSeconds = 0.5;
       } else {
-        intervalSeconds = 0.4;
+        intervalSeconds = 1.0;
       }
 
       // Estimate total frames to extract

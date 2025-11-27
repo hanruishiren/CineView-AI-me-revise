@@ -16,7 +16,7 @@ const getClient = (apiKey?: string) => {
   if (!key && typeof process !== 'undefined' && process.env && process.env.API_KEY) {
     key = process.env.API_KEY;
   }
-  
+
   if (!key) {
     throw new Error("API Key is missing. Please click the Key icon in the top right to enter your Google Gemini API Key.");
   }
@@ -24,7 +24,7 @@ const getClient = (apiKey?: string) => {
 };
 
 export const analyzeVideoFrames = async (
-  frames: ProcessedFrame[], 
+  frames: ProcessedFrame[],
   fileName: string,
   language: Language = 'en',
   apiKey?: string
@@ -108,7 +108,15 @@ export const analyzeVideoFrames = async (
   // Increased MAX_FRAMES to 300 because we reduced image size to 256px in frameExtractor.
   // 300 frames * ~10KB = ~3MB, which is safe.
   const MAX_FRAMES = 300;
-  const framesToSend = frames.length > MAX_FRAMES ? frames.filter((_, i) => i % Math.ceil(frames.length / MAX_FRAMES) === 0) : frames;
+
+  // Fixed downsampling: use Math.floor and slice to guarantee exactly MAX_FRAMES
+  const framesToSend = frames.length > MAX_FRAMES
+    ? frames.filter((_, i) => i % Math.floor(frames.length / MAX_FRAMES) === 0).slice(0, MAX_FRAMES)
+    : frames;
+
+  // Debug logging
+  console.log(`[Gemini API] Sending ${framesToSend.length} frames to Gemini (extracted: ${frames.length})`);
+  console.log(`[Gemini API] Estimated payload: ~${(framesToSend.length * 10 / 1024).toFixed(1)}MB`);
 
   framesToSend.forEach((frame, index) => {
     parts.push({
@@ -123,7 +131,10 @@ export const analyzeVideoFrames = async (
   });
 
   try {
-    const response = await ai.models.generateContent({
+    console.log('[Gemini API] Starting video analysis request...');
+
+    // Add 120s timeout protection
+    const apiCall = ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: { parts },
       config: {
@@ -131,13 +142,13 @@ export const analyzeVideoFrames = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { 
-              type: Type.STRING, 
-              description: isZh ? "片段标题 (中文)" : "A creative title for this scene/clip" 
+            title: {
+              type: Type.STRING,
+              description: isZh ? "片段标题 (中文)" : "A creative title for this scene/clip"
             },
-            summary: { 
-              type: Type.STRING, 
-              description: isZh ? "片段总结 (中文)" : "A 2-sentence summary of the overall video clip." 
+            summary: {
+              type: Type.STRING,
+              description: isZh ? "片段总结 (中文)" : "A 2-sentence summary of the overall video clip."
             },
             shots: {
               type: Type.ARRAY,
@@ -148,25 +159,25 @@ export const analyzeVideoFrames = async (
                   startTime: { type: Type.STRING, description: "Format: MM:SS" },
                   endTime: { type: Type.STRING, description: "Format: MM:SS" },
                   duration: { type: Type.NUMBER, description: "Duration in seconds (Number only, e.g. 1.5)" },
-                  size: { 
-                    type: Type.STRING, 
-                    description: isZh ? "景别 (必须使用中文, 如: 特写, 全景)" : "Shot size abbreviation (e.g. CU, Wide)" 
+                  size: {
+                    type: Type.STRING,
+                    description: isZh ? "景别 (必须使用中文, 如: 特写, 全景)" : "Shot size abbreviation (e.g. CU, Wide)"
                   },
-                  movement: { 
+                  movement: {
                     type: Type.STRING,
                     description: isZh ? "运镜 (必须使用中文, 如: 推, 拉, 摇)" : "Camera movement"
                   },
-                  description: { 
+                  description: {
                     type: Type.STRING,
                     description: isZh ? "画面描述 (必须使用中文)" : "Visual description"
                   },
-                  audio: { 
-                    type: Type.STRING, 
-                    description: isZh ? "人声/对白 (必须使用中文)" : "Inferred dialogue/voice" 
+                  audio: {
+                    type: Type.STRING,
+                    description: isZh ? "人声/对白 (必须使用中文)" : "Inferred dialogue/voice"
                   },
-                  sfx: { 
-                    type: Type.STRING, 
-                    description: isZh ? "音效 (必须使用中文)" : "Inferred sound effects" 
+                  sfx: {
+                    type: Type.STRING,
+                    description: isZh ? "音效 (必须使用中文)" : "Inferred sound effects"
                   },
                   thumbnailIndex: { type: Type.INTEGER, description: "The index of the frame in the provided list that matches this shot" }
                 }
@@ -177,27 +188,40 @@ export const analyzeVideoFrames = async (
       }
     });
 
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini API timeout after 120 seconds")), 120000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+
+    console.log('[Gemini API] Response received successfully');
     const resultText = response.text;
     if (!resultText) throw new Error("No response from Gemini");
-    
+
     const data = JSON.parse(resultText) as AnalysisResult;
     return data;
 
   } catch (error) {
-    console.error("Gemini Analysis Failed", error);
+    console.error("[Gemini API] Analysis Failed:", error);
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        throw new Error(`Gemini API timeout - video may be too complex. Try a shorter clip or reduce quality.`);
+      }
+      throw new Error(`Gemini API error: ${error.message}`);
+    }
     throw error;
   }
 };
 
 export const translateAnalysisResult = async (
-  data: AnalysisResult, 
+  data: AnalysisResult,
   targetLang: Language,
   apiKey?: string
 ): Promise<AnalysisResult> => {
   const ai = getClient(apiKey);
 
   const isZh = targetLang === 'zh';
-  const prompt = isZh 
+  const prompt = isZh
     ? `你是一个专业的翻译助手。请将以下电影分镜表数据的 JSON 内容翻译成中文。
        仅翻译以下字段的值：'summary', 'title' 以及 shots 数组中的 'size', 'movement', 'description', 'audio', 'sfx'。
        不要修改任何数字、时间戳或结构。
@@ -216,41 +240,41 @@ export const translateAnalysisResult = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-                title: { type: Type.STRING },
-                summary: { type: Type.STRING },
-                shots: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            shotNumber: { type: Type.INTEGER },
-                            startTime: { type: Type.STRING },
-                            endTime: { type: Type.STRING },
-                            duration: { type: Type.NUMBER },
-                            size: { type: Type.STRING },
-                            movement: { type: Type.STRING },
-                            description: { type: Type.STRING },
-                            audio: { type: Type.STRING },
-                            sfx: { type: Type.STRING },
-                            thumbnailIndex: { type: Type.INTEGER }
-                        }
-                    }
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            shots: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  shotNumber: { type: Type.INTEGER },
+                  startTime: { type: Type.STRING },
+                  endTime: { type: Type.STRING },
+                  duration: { type: Type.NUMBER },
+                  size: { type: Type.STRING },
+                  movement: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  audio: { type: Type.STRING },
+                  sfx: { type: Type.STRING },
+                  thumbnailIndex: { type: Type.INTEGER }
                 }
+              }
             }
+          }
         }
       }
     });
 
     const resultText = response.text;
     if (!resultText) throw new Error("No response from Gemini during translation");
-    
+
     return JSON.parse(resultText) as AnalysisResult;
 
   } catch (error) {
     console.error("Translation Failed", error);
-    return data; 
+    return data;
   }
 };
 
@@ -259,17 +283,17 @@ export const generateScreenplay = async (
   language: Language,
   apiKey?: string
 ): Promise<string> => {
-    const ai = getClient(apiKey);
-    const isZh = language === 'zh';
+  const ai = getClient(apiKey);
+  const isZh = language === 'zh';
 
-    const cleanShots = data.shots.map(s => ({
-        id: s.shotNumber,
-        time: s.startTime,
-        desc: s.description,
-        audio: s.audio
-    }));
+  const cleanShots = data.shots.map(s => ({
+    id: s.shotNumber,
+    time: s.startTime,
+    desc: s.description,
+    audio: s.audio
+  }));
 
-    const prompt = isZh 
+  const prompt = isZh
     ? `你是一位专业的电影编剧。根据以下分镜表（Shot List）数据，反推并生成一份标准的电影剧本格式文本。
        
        格式要求：
@@ -287,137 +311,137 @@ export const generateScreenplay = async (
        
        Output ONLY the screenplay text.`;
 
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-                { role: 'user', parts: [{ text: prompt }, { text: JSON.stringify({ title: data.title, summary: data.summary, shots: cleanShots }) }] }
-            ]
-        });
-        return response.text || "";
-    } catch (error) {
-        console.error("Screenplay Generation Failed", error);
-        return "Error generating screenplay.";
-    }
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        { role: 'user', parts: [{ text: prompt }, { text: JSON.stringify({ title: data.title, summary: data.summary, shots: cleanShots }) }] }
+      ]
+    });
+    return response.text || "";
+  } catch (error) {
+    console.error("Screenplay Generation Failed", error);
+    return "Error generating screenplay.";
+  }
 };
 
 const findBestCharacterFrame = async (frames: ProcessedFrame[], apiKey?: string): Promise<string | null> => {
-    const ai = getClient(apiKey);
-    
-    const framesToCheck = frames.filter((_, i) => i % 4 === 0); 
-    
-    const parts: any[] = [];
-    parts.push({ 
-        text: "Analyze these video frames. I need to design a movie poster. Identify the single best frame index (from the provided list) that contains the CLEARSEST, HIGHEST QUALITY CLOSE-UP or MEDIUM CLOSE-UP of the MAIN CHARACTER's face. This frame will be used as a strict visual reference for the poster. Return a JSON object: { \"bestFrameIndex\": number }." 
+  const ai = getClient(apiKey);
+
+  const framesToCheck = frames.filter((_, i) => i % 4 === 0);
+
+  const parts: any[] = [];
+  parts.push({
+    text: "Analyze these video frames. I need to design a movie poster. Identify the single best frame index (from the provided list) that contains the CLEARSEST, HIGHEST QUALITY CLOSE-UP or MEDIUM CLOSE-UP of the MAIN CHARACTER's face. This frame will be used as a strict visual reference for the poster. Return a JSON object: { \"bestFrameIndex\": number }."
+  });
+
+  framesToCheck.forEach((frame, index) => {
+    parts.push({ text: `[Index: ${index}]` });
+    parts.push({
+      inlineData: {
+        mimeType: "image/jpeg",
+        data: frame.data
+      }
     });
+  });
 
-    framesToCheck.forEach((frame, index) => {
-        parts.push({ text: `[Index: ${index}]` });
-        parts.push({
-            inlineData: {
-                mimeType: "image/jpeg",
-                data: frame.data
-            }
-        });
-    });
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: { parts },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        bestFrameIndex: { type: Type.INTEGER }
-                    }
-                }
-            }
-        });
-
-        const result = JSON.parse(response.text || "{}");
-        if (typeof result.bestFrameIndex === 'number' && framesToCheck[result.bestFrameIndex]) {
-             return framesToCheck[result.bestFrameIndex].data;
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: { parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            bestFrameIndex: { type: Type.INTEGER }
+          }
         }
-        return null;
-    } catch (e) {
-        console.warn("Failed to automatically identify best character frame", e);
-        return null;
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    if (typeof result.bestFrameIndex === 'number' && framesToCheck[result.bestFrameIndex]) {
+      return framesToCheck[result.bestFrameIndex].data;
     }
+    return null;
+  } catch (e) {
+    console.warn("Failed to automatically identify best character frame", e);
+    return null;
+  }
 }
 
 export const generateMoviePoster = async (
-    title: string,
-    summary: string,
-    shots: ShotData[],
-    frames: ProcessedFrame[],
-    apiKey?: string
+  title: string,
+  summary: string,
+  shots: ShotData[],
+  frames: ProcessedFrame[],
+  apiKey?: string
 ): Promise<string[]> => {
-    const ai = getClient(apiKey);
-    
-    let referenceImageBase64 = await findBestCharacterFrame(frames, apiKey);
+  const ai = getClient(apiKey);
 
-    if (!referenceImageBase64) {
-        console.log("Fallback to metadata for character frame...");
-        const goodSizes = ['CU', 'MCU', 'Close Up', 'Close-Up', 'Medium Close Up', '特写', '近景'];
-        const bestShot = shots.find(s => goodSizes.some(size => s.size.includes(size)));
-        let heroFrameIndex = bestShot && bestShot.thumbnailIndex < frames.length 
-            ? bestShot.thumbnailIndex 
-            : Math.floor(frames.length / 2);
-        referenceImageBase64 = frames[heroFrameIndex]?.data;
-    }
+  let referenceImageBase64 = await findBestCharacterFrame(frames, apiKey);
 
-    if (!referenceImageBase64) {
-        return []; 
-    }
+  if (!referenceImageBase64) {
+    console.log("Fallback to metadata for character frame...");
+    const goodSizes = ['CU', 'MCU', 'Close Up', 'Close-Up', 'Medium Close Up', '特写', '近景'];
+    const bestShot = shots.find(s => goodSizes.some(size => s.size.includes(size)));
+    let heroFrameIndex = bestShot && bestShot.thumbnailIndex < frames.length
+      ? bestShot.thumbnailIndex
+      : Math.floor(frames.length / 2);
+    referenceImageBase64 = frames[heroFrameIndex]?.data;
+  }
 
-    const verticalReferenceBase64 = await cropToVertical9_16(referenceImageBase64);
-    
-    const basePrompt = `Generate a movie poster for a film titled "${title}".
+  if (!referenceImageBase64) {
+    return [];
+  }
+
+  const verticalReferenceBase64 = await cropToVertical9_16(referenceImageBase64);
+
+  const basePrompt = `Generate a movie poster for a film titled "${title}".
     CRITICAL: The output MUST be a vertical 9:16 movie poster.
     The person in the poster MUST look exactly like the character in the provided reference image. 
     Maintain the character's specific facial features, ethnicity, age, hairstyle, and costume details from the reference image.
     Film Summary: "${summary}".
     Style: High-quality cinematic movie poster, professional lighting, dramatic composition, title text overlay at the bottom.`;
 
-    const variations = [
-        "Close-up portrait with dramatic lighting.",
-        "Character in a key environment from the film.",
-        "Minimalist design with bold typography and high contrast.",
-        "Dynamic action pose composition."
-    ];
+  const variations = [
+    "Close-up portrait with dramatic lighting.",
+    "Character in a key environment from the film.",
+    "Minimalist design with bold typography and high contrast.",
+    "Dynamic action pose composition."
+  ];
 
-    const promises = variations.map(async (variation) => {
-        try {
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-image", 
-                contents: {
-                    parts: [
-                        {
-                            inlineData: {
-                                mimeType: "image/jpeg",
-                                data: verticalReferenceBase64
-                            }
-                        },
-                        { text: `${basePrompt} Variation: ${variation}` }
-                    ]
-                },
-                config: {
-                    responseModalities: [Modality.IMAGE],
-                }
-            });
-            const part = response.candidates?.[0]?.content?.parts?.[0];
-            if (part && part.inlineData && part.inlineData.data) {
-                return part.inlineData.data;
-            }
-            return null;
-        } catch (e) {
-            console.warn("Failed to generate one poster variation", e);
-            return null;
+  const promises = variations.map(async (variation) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-image",
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: verticalReferenceBase64
+              }
+            },
+            { text: `${basePrompt} Variation: ${variation}` }
+          ]
+        },
+        config: {
+          responseModalities: [Modality.IMAGE],
         }
-    });
+      });
+      const part = response.candidates?.[0]?.content?.parts?.[0];
+      if (part && part.inlineData && part.inlineData.data) {
+        return part.inlineData.data;
+      }
+      return null;
+    } catch (e) {
+      console.warn("Failed to generate one poster variation", e);
+      return null;
+    }
+  });
 
-    const results = await Promise.all(promises);
-    return results.filter((res): res is string => res !== null);
+  const results = await Promise.all(promises);
+  return results.filter((res): res is string => res !== null);
 }
