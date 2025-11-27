@@ -187,6 +187,22 @@ export const analyzeVideoFrames = async (
         }
       }
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini API timeout after 120 seconds")), 120000)
+    );
+
+    const response = await Promise.race([apiCall, timeoutPromise]);
+
+    console.log('[Gemini API] Response received successfully');
+    const resultText = response.text;
+    if (!resultText) throw new Error("No response from Gemini");
+
+    const data = JSON.parse(resultText) as AnalysisResult;
+    return data;
+
+  } catch (error) {
+    console.error("[Gemini API] Analysis Failed:", error);
     if (error instanceof Error) {
       if (error.message.includes('timeout')) {
         throw new Error(`Gemini API timeout - video may be too complex. Try a shorter clip or reduce quality.`);
