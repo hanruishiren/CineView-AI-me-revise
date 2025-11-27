@@ -9,7 +9,7 @@ interface UploadZoneProps {
   onUploadClick?: () => boolean;
 }
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, language, onUploadClick }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,8 +22,8 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, language, onUploa
   const validateAndSelect = useCallback((file: File) => {
     // File Size Check
     if (file.size > MAX_FILE_SIZE) {
-        alert(`${t('errorFileTooLarge', language)}\n${t('limitSuggestion', language)}`);
-        return;
+      alert(`${t('errorFileTooLarge', language)}\n${t('limitSuggestion', language)}`);
+      return;
     }
     onFileSelect(file);
   }, [onFileSelect, language]);
@@ -34,8 +34,8 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, language, onUploa
 
     // Key Check for Drop
     if (onUploadClick) {
-        const canProceed = onUploadClick();
-        if (!canProceed) return;
+      const canProceed = onUploadClick();
+      if (!canProceed) return;
     }
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -75,26 +75,26 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, language, onUploa
       >
         {/* Updated Icon Container to match Card Style */}
         <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center text-gray-900 dark:text-white transition-transform duration-300 group-hover:scale-110 shrink-0 backdrop-blur-sm">
-            <UploadIcon className="w-7 h-7" />
+          <UploadIcon className="w-7 h-7" />
         </div>
-        
+
         <div className="flex flex-col text-left">
           <p className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
             {t('uploadVideoFile', language)}
           </p>
           <div className="flex flex-col mt-0.5">
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                {t('supportedFormats', language)}
+              {t('supportedFormats', language)}
             </p>
           </div>
         </div>
-        <input 
-            ref={inputRef} 
-            type="file" 
-            className="hidden" 
-            accept="video/*" 
-            onChange={handleInputChange} 
-            onClick={(e) => e.stopPropagation()}
+        <input
+          ref={inputRef}
+          type="file"
+          className="hidden"
+          accept="video/*"
+          onChange={handleInputChange}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
     </div>

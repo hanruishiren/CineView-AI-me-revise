@@ -28,9 +28,9 @@ const parseTime = (timeStr: string): number => {
 const ClipPlayer = ({ videoSrc, startTime, endTime }: { videoSrc: string, startTime: string, endTime: string }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const requestRef = useRef<number | undefined>(undefined);
-  const start = parseTime(startTime);
+  const start = parseTime(startTime) + 0.05; // Add small buffer to skip previous shot's last frame
   // Add a tiny buffer (-0.05s) to end time to prevent bleeding into next frame visual
-  const end = Math.max(start + 0.1, parseTime(endTime) - 0.05);
+  const end = Math.max(start + 0.1, parseTime(endTime) - 0.02); // Reduce buffer to show current shot's actual last frame
 
   const animate = () => {
     if (videoRef.current) {

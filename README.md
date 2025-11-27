@@ -93,7 +93,7 @@ npm run dev
 
 1. Enter API Key: Upon launching, click the key icon or follow the prompt to enter your Google Gemini API Key. The key is saved locally on your device.
 2. Upload Video: Drag and drop a video file (MP4, MOV, WebM).
-   - Recommendation: Short clips (under 2 minutes) work best for detailed analysis.
+   - Recommendation: Short clips (under 5 minutes) work best for detailed analysis.
 3. Analyze: The app will extract frames and send them to Gemini for analysis.
 4. Explore Results:
    - Shot List: View, edit, and export your shots to CSV.
@@ -166,19 +166,6 @@ npm install
 npm run dev
 ```
 
-4. 打开浏览器访问终端中显示的本地地址（通常是 http://localhost:5173）。
-
-## 使用指南
-
-1. 输入 API Key: 首次启动时，点击右上角的钥匙图标或根据提示输入您的 Google Gemini API Key。密钥将安全地保存在您的本地。
-2. 上传视频: 拖拽或点击上传视频文件 (支持 MP4, MOV, WebM)。
-   - 建议: 为了获得最佳的详细分析效果，建议上传 2 分钟以内的短片。
-3. 等待分析: 应用会自动提取关键帧并发送给 Gemini 进行多模态分析。
-4. 查看结果:
-   - 分镜表: 查看、编辑并将分镜数据导出为 CSV 文件。
-   - 色彩脚本: 分析色彩分布并导出长图。
-   - 剧本: 查看由 AI 根据视频内容反推生成的剧本。
-   - 海报: 基于视频画面一键生成电影海报。
 
 ---
 

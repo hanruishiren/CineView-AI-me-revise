@@ -1,7 +1,7 @@
 
 import { ProcessedFrame, VideoMetadata } from '../types';
 
-const MAX_DURATION_SECONDS = 120; // 2 Minutes
+const MAX_DURATION_SECONDS = 300; // 5 Minutes
 
 export const extractFramesFromVideo = async (
   videoFile: File,
@@ -12,7 +12,7 @@ export const extractFramesFromVideo = async (
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const frames: ProcessedFrame[] = [];
-    
+
     // Create a URL for the video file
     const videoUrl = URL.createObjectURL(videoFile);
     video.src = videoUrl;
@@ -27,28 +27,28 @@ export const extractFramesFromVideo = async (
 
     video.onloadedmetadata = () => {
       const duration = video.duration;
-      
+
       // Check Duration Limit
       if (duration > MAX_DURATION_SECONDS) {
-          URL.revokeObjectURL(videoUrl);
-          reject(new Error("VIDEO_TOO_LONG"));
-          return;
+        URL.revokeObjectURL(videoUrl);
+        reject(new Error("VIDEO_TOO_LONG"));
+        return;
       }
 
       const width = video.videoWidth;
       const height = video.videoHeight;
-      
+
       // ULTRA-HIGH PRECISION Intervals
       // < 30s: 10 fps (0.1s) -> Guarantees catching micro-cuts
       // < 60s: 5 fps (0.2s)
       // > 60s: 2.5 fps (0.4s)
       let intervalSeconds = 1.0;
       if (duration <= 30) {
-        intervalSeconds = 0.1; 
+        intervalSeconds = 0.1;
       } else if (duration <= 60) {
-        intervalSeconds = 0.2; 
+        intervalSeconds = 0.2;
       } else {
-        intervalSeconds = 0.4; 
+        intervalSeconds = 0.4;
       }
 
       // Estimate total frames to extract
@@ -61,9 +61,9 @@ export const extractFramesFromVideo = async (
       const seekAndCapture = async () => {
         if (currentTime >= duration) {
           URL.revokeObjectURL(videoUrl);
-          resolve({ 
-            frames, 
-            metadata: { width, height, duration } 
+          resolve({
+            frames,
+            metadata: { width, height, duration }
           });
           return;
         }
@@ -76,20 +76,20 @@ export const extractFramesFromVideo = async (
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           // Low quality compression (0.4) to minimize payload size for high volume
-          const base64 = canvas.toDataURL('image/jpeg', 0.4); 
-          
+          const base64 = canvas.toDataURL('image/jpeg', 0.4);
+
           frames.push({
             timestamp: currentTime,
             // Remove the data URL prefix for the API
-            data: base64.split(',')[1], 
+            data: base64.split(',')[1],
           });
 
           onProgress(frames.length, estimatedFrames);
-          
+
           currentTime += intervalSeconds;
           seekAndCapture();
         } else {
-            reject(new Error("Could not get canvas context"));
+          reject(new Error("Could not get canvas context"));
         }
       };
 
