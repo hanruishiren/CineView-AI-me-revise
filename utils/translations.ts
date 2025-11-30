@@ -3,7 +3,7 @@ import { Language } from "../types";
 
 export const translations = {
   en: {
-    appTitle: "CineView AI",
+    appTitle: "Video Analyze",
     appSubtitle: "Automated Shot List Generator",
     uploadTitle: "Create Assets from Video.",
     uploadDesc: "Transform your video into a professional production package. Automated shot lists, color scripts, screenplays, and posters—all powered by AI.",
@@ -89,25 +89,25 @@ export const translations = {
     // API Key
     apiKeyRequired: "API Key Required",
     enterApiKey: "Enter your Google Gemini API Key",
-    apiKeyDesc: "To use CineView AI, you need a free API key from Google AI Studio. Your key is stored locally in your browser.",
+    apiKeyDesc: "To use Video Analyze, you need a free API key from Google AI Studio. Your key is stored locally in your browser.",
     getApiKey: "Get API Key here",
     saveKey: "Save Key",
     changeKey: "Change API Key",
     invalidKey: "Please enter a valid API Key starting with AIza"
   },
   zh: {
-    appTitle: "CineView AI",
+    appTitle: "Video Analyze",
     appSubtitle: "自动分镜生成器",
     uploadTitle: "从视频创造创意资产。",
     uploadDesc: "利用 AI 自动生成分镜表、色彩脚本、标准剧本和电影海报。",
     uploadVideoFile: "上传视频文件",
     uploadDragDrop: "点击或拖拽上传",
     supportedFormats: "支持格式：MP4, MOV, WebM",
-    uploadLimitsHint: "限制：时长2分钟 • 大小100MB",
+    uploadLimitsHint: "限制:时长2分钟 • 大小100MB",
     uploadError: "请上传有效的视频文件。",
     errorFileTooLarge: "文件过大，最大支持 100MB。",
     errorVideoTooLong: "视频时长超出限制。",
-    limitSuggestion: "限制：2分钟且100MB以内。请剪辑后重新上传。",
+    limitSuggestion: "限制:2分钟且100MB以内。请剪辑后重新上传。",
     smartDetection: "智能检测",
     smartDetectionDesc: "自动识别景别（特写、全景）和镜头运动。",
     visualContext: "视觉分析",
@@ -182,7 +182,7 @@ export const translations = {
     // API Key
     apiKeyRequired: "需要 API Key",
     enterApiKey: "输入你的 Google Gemini API Key",
-    apiKeyDesc: "使用 CineView AI 需要 Google AI Studio 的免费 API Key。密钥仅存储在本地浏览器中。",
+    apiKeyDesc: "使用 Video Analyze 需要 Google AI Studio 的免费 API Key。密钥仅存储在本地浏览器中。",
     getApiKey: "在此获取 API Key",
     saveKey: "保存密钥",
     changeKey: "更换 API Key",

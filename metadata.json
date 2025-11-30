@@ -1,5 +1,5 @@
 {
-  "name": "CineView AI V1.0",
+  "name": "Video Analyze",
   "description": "An automated video breakdown tool that generates professional shot lists and scene analysis using Gemini Vision.",
   "requestFramePermissions": []
 }
