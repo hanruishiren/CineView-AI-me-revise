@@ -5,7 +5,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: process.env.NODE_ENV === 'production' ? '/CineView-AI-me-revise/' : '/',
+    // 根据部署目标设置 base 路径
+    // VITE_DEPLOY_TARGET=github 用于 GitHub Pages 部署
+    // VITE_DEPLOY_TARGET=render 或默认用于 Render 部署
+    base: env.VITE_DEPLOY_TARGET === 'github' ? '/CineView-AI-me-revise/' : '/',
     server: {
       port: 3000,
       host: '0.0.0.0',
