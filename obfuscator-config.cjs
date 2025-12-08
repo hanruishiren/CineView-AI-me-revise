@@ -15,11 +15,11 @@ module.exports = {
   transformObjectKeys: true,         // 启用对象键转换
 
   // ========== 控制流混淆 (已启用) ==========
-  controlFlowFlattening: true,
+  controlFlowFlattening: false,
   controlFlowFlatteningThreshold: 0.5,
 
   // ========== 死代码注入 (已启用) ==========
-  deadCodeInjection: true,
+  deadCodeInjection: false,
   deadCodeInjectionThreshold: 0.2,
 
   // ========== 字符串混淆 ==========
@@ -35,11 +35,11 @@ module.exports = {
   stringArrayThreshold: 0.5,
 
   // ========== 字符串分割 ==========
-  splitStrings: true,                // 启用字符串分割
+  splitStrings: false,                // 启用字符串分割
   splitStringsChunkLength: 10,
 
   // ========== 数字混淆 ==========
-  numbersToExpressions: true,        // 启用数字表达式
+  numbersToExpressions: false,        // 启用数字表达式
 
   // ========== 调试保护 (已启用) ==========
   debugProtection: true,            // 启用反调试
@@ -47,7 +47,7 @@ module.exports = {
   disableConsoleOutput: true,       // 禁用console输出以进行调试
 
   // ========== 自我保护 ==========
-  selfDefending: true,               // 启用自我保护
+  selfDefending: false,               // 启用自我保护
 
   // ========== 源码映射 ==========
   sourceMap: false,

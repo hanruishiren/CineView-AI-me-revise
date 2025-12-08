@@ -2,7 +2,7 @@ services:
   - type: web
     name: cineview-ai
     env: static
-    buildCommand: npm install && npm run build:protected
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
       - type: rewrite

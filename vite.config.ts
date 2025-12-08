@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
             /obfuscator-config/,
           ],
           apply: 'build',  // 仅在构建时应用
-          debugger: isProduction,
+          debugger: false, // isProduction,
           options: obfuscatorConfig,
         })
       ] : [])
@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => {
 
     build: {
       // 生产环境优化
-      minify: isProduction ? 'terser' : false,
+      minify: false, // isProduction ? 'terser' : false,
 
       terserOptions: isProduction ? {
         compress: {
