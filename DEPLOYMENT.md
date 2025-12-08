@@ -6,23 +6,42 @@
 
 ## 部署方式
 
-### 1. Render 部署（默认）
+### 1. Render 部署（推荐）
 
 **使用场景**：直接从根路径访问（例如：`https://your-app.onrender.com/`）
 
-**构建命令**：
-```bash
-npm run build:render
-# 或者直接使用
-npm run build
-```
+**自动化配置（推荐）**：
+本项目包含 `render.yaml` 配置文件。当你在 Render 上连接此仓库时，它应该会自动检测配置。
+- **Build Command**: `npm install && npm run build:protected`
+- **Publish Directory**: `dist`
+
+**手动配置**：
+如果 Render 没有自动检测，或者你手动创建了服务，请参考以下设置：
+
+> [!NOTE]
+> 请确保你创建的是 **Static Site** (静态站点)，而不是 Web Service。
+> 如果你看到 "Start Command" 选项，说明你可能错误地创建了 Web Service。
+
+**Static Site 设置**:
+- **Build Command**: `npm install && npm run build:protected`
+- **Publish Directory**: `dist`
+
+**Web Service 设置 (不推荐，除非必须)**:
+如果你必须使用 Web Service，则需要一个命令来启动服务：
+- **Build Command**: `npm install && npm run build:protected`
+- **Start Command**: `npx serve -s dist -l 10000` (需要安装 `serve` 包)
+
+> [!IMPORTANT]
+> **不要在 Render 上运行 `npm run deploy`**。
+> 该命令是专门为 GitHub Pages 设计的，它会尝试将代码 push 到 GitHub，这在 Render 环境中会因为没有权限而失败（显示 "fetch failed"）。Render 会自动部署 `dist` 目录中的内容。
+
+**域名白名单配置**：
+代码保护包含域名白名单机制。如果你的 Render 域名发生变化（例如使用了自定义域名），你需要更新 `src/domain-guard.ts` 文件。
+- 当前白名单包含：`cineview-ai.onrender.com`
+- 如果使用新域名，请在 `src/domain-guard.ts` 的 `ALLOWED_DOMAINS` 数组中添加你的新域名。
 
 **环境变量**：
 - 不需要设置 `VITE_DEPLOY_TARGET`，或者设置为 `VITE_DEPLOY_TARGET=render`
-
-**Render 配置**：
-- Build Command: `npm install && npm run build:render`
-- Publish Directory: `dist`
 
 ---
 

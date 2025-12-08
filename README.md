@@ -101,6 +101,21 @@ npm run dev
    - Screenplay: Read the AI-generated script derived from your video.
    - Poster: Generate creative movie posters based on the footage.
 
+## Deployment
+
+This project supports deployment on both **Render** and **GitHub Pages**.
+
+### Render (Recommended)
+- **Type**: Static Site
+- **Build Command**: `npm install && npm run build:protected`
+- **Publish Directory**: `dist`
+- **Configuration**: Automatically handled via `render.yaml`.
+
+### GitHub Pages
+- **Command**: `npm run deploy`
+
+For detailed deployment instructions, including domain whitelisting and environment variables, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ---
 
 <a name="chinese"></a>
@@ -166,6 +181,23 @@ npm install
 npm run dev
 ```
 
+
+---
+
+## 部署指南
+
+本项目支持部署到 **Render** 和 **GitHub Pages**。
+
+### Render (推荐)
+- **类型**: Static Site (静态站点)
+- **构建命令**: `npm install && npm run build:protected`
+- **发布目录**: `dist`
+- **配置**: 通过 `render.yaml` 自动配置。
+
+### GitHub Pages
+- **部署命令**: `npm run deploy`
+
+详细部署说明（包括域名白名单和环境变量配置），请参阅 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ---
 
