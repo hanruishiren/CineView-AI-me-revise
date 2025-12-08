@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ProcessedFrame, AnalysisResult, Language, ShotData } from "../types";
 import { cropToVertical9_16 } from "../utils/videoUtils";
 
@@ -12,9 +12,9 @@ const getClient = (apiKey?: string) => {
   // 2. Try to get the key from LocalStorage (User provided persistence)
   let key = localStorage.getItem("gemini_api_key");
 
-  // 3. Fallback to process.env if available (Dev/Build time config)
-  if (!key && typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-    key = process.env.API_KEY;
+  // 3. Fallback to import.meta.env if available (Vite config)
+  if (!key && import.meta.env && import.meta.env.VITE_API_KEY) {
+    key = import.meta.env.VITE_API_KEY;
   }
 
   if (!key) {
@@ -133,11 +133,17 @@ export const analyzeVideoFrames = async (
   try {
     console.log('[Gemini API] Starting video analysis request...');
 
-    // Add 120s timeout protection
+    // Add 600s timeout protection (10 minutes)
     const apiCall = ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: { parts },
       config: {
+        safetySettings: [
+          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        ],
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -189,14 +195,37 @@ export const analyzeVideoFrames = async (
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Gemini API timeout after 120 seconds")), 120000)
+      setTimeout(() => reject(new Error("Gemini API timeout after 600 seconds")), 600000)
     );
 
     const response = await Promise.race([apiCall, timeoutPromise]);
 
     console.log('[Gemini API] Response received successfully');
-    const resultText = response.text;
-    if (!resultText) throw new Error("No response from Gemini");
+
+    // Robust text extraction
+    let resultText = typeof response.text === 'function' ? response.text() : response.text;
+
+    // Fallback to candidates if helper fails
+    if (!resultText && response.candidates && response.candidates.length > 0) {
+      const candidate = response.candidates[0];
+      if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+        resultText = candidate.content.parts[0].text;
+      }
+    }
+
+    if (!resultText) {
+      console.error("[Gemini API] Empty response. Full response object:", JSON.stringify(response, null, 2));
+
+      const candidate = response.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      const safetyRatings = candidate?.safetyRatings;
+
+      if (finishReason) {
+        throw new Error(`Gemini API blocked response. Reason: ${finishReason}. Safety Ratings: ${JSON.stringify(safetyRatings)}`);
+      }
+
+      throw new Error("No response text from Gemini (Unknown reason)");
+    }
 
     const data = JSON.parse(resultText) as AnalysisResult;
     return data;
