@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
             /obfuscator-config/,
           ],
           apply: 'build',  // 仅在构建时应用
-          debugger: false, // isProduction,
+          debugger: isProduction,
           options: obfuscatorConfig,
         })
       ] : [])
@@ -53,22 +53,12 @@ export default defineConfig(({ mode }) => {
 
     build: {
       // 生产环境优化
-      minify: false, // isProduction ? 'terser' : false,
+      minify: isProduction ? 'esbuild' : false,
 
-      terserOptions: isProduction ? {
-        compress: {
-          drop_console: false,     // 暂时保留console以调试
-          drop_debugger: true,
-          // pure_funcs: ['console.log', 'console.info', 'console.debug'], // 暂时注释
-          passes: 1,               // 降低压缩强度
-        },
-        mangle: {
-          toplevel: false,         // 禁用顶级变量混淆以提高稳定性
-          safari10: true,
-        },
-        format: {
-          comments: false,
-        },
+      // esbuild minify options (faster and more stable than terser)
+      esbuild: isProduction ? {
+        drop: ['debugger'],
+        pure: ['console.log'],
       } : undefined,
 
       // Source Map 配置

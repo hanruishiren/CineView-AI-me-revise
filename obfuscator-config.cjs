@@ -14,17 +14,17 @@ module.exports = {
   renameProperties: false,
   transformObjectKeys: true,         // 启用对象键转换
 
-  // ========== 控制流混淆 (已启用) ==========
-  controlFlowFlattening: false,
-  controlFlowFlatteningThreshold: 0.5,
+  // ========== 控制流混淆 (平衡模式 - 经测试可用) ==========
+  controlFlowFlattening: true,
+  controlFlowFlatteningThreshold: 0.35,
 
-  // ========== 死代码注入 (已启用) ==========
-  deadCodeInjection: false,
-  deadCodeInjectionThreshold: 0.2,
+  // ========== 死代码注入 (平衡模式) ==========
+  deadCodeInjection: true,
+  deadCodeInjectionThreshold: 0.15,
 
-  // ========== 字符串混淆 ==========
+  // ========== 字符串混淆 (平衡模式) ==========
   stringArray: true,
-  stringArrayEncoding: ['rc4'],      // 启用RC4加密
+  stringArrayEncoding: ['base64'],
   stringArrayIndexShift: true,
   stringArrayRotate: true,
   stringArrayShuffle: true,
@@ -34,20 +34,20 @@ module.exports = {
   stringArrayWrappersType: 'variable',
   stringArrayThreshold: 0.5,
 
-  // ========== 字符串分割 ==========
-  splitStrings: false,                // 启用字符串分割
+  // ========== 字符串分割 (禁用 - 过于消耗资源) ==========
+  splitStrings: false,
   splitStringsChunkLength: 10,
 
-  // ========== 数字混淆 ==========
-  numbersToExpressions: false,        // 启用数字表达式
+  // ========== 数字混淆 (禁用 - 可能导致问题) ==========
+  numbersToExpressions: false,
 
-  // ========== 调试保护 (已启用) ==========
-  debugProtection: true,            // 启用反调试
+  // ========== 调试保护 (平衡模式) ==========
+  debugProtection: true,
   debugProtectionInterval: 0,
-  disableConsoleOutput: true,       // 禁用console输出以进行调试
+  disableConsoleOutput: false,
 
-  // ========== 自我保护 ==========
-  selfDefending: false,               // 启用自我保护
+  // ========== 自我保护 (禁用 - 可能导致问题) ==========
+  selfDefending: false,
 
   // ========== 源码映射 ==========
   sourceMap: false,
